@@ -10,8 +10,8 @@ WEIBO_COOKIE = "XSRF-TOKEN=2hXB-6yJ7dKqIw-j9IVHaZBP; SCF=ArwiBQLpqce5qcSIGabGioT
 
 KEYWORDS = [
     "上海", "杭州", "北京", "厦门", "南京",     # 旅行类
-    "F1.2", "Pro", "镜头", "国产", "3499元",    # 数码类
     "E1", "摩苏尔", "克罗地亚", "洛杉矶",       # 影视类
     "IVL", "WBG", "夏季赛",                     # 电竞类
-    "地下商场", "约会", "初恋"                  # 故事类
+    "地下商场", "约会", "初恋",                  # 故事类
+    "高考"
     ]
