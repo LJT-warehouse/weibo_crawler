@@ -1,238 +1,169 @@
-下面给出**使用MySQL数据库**、以**新浪微博**为目标的**B级实验详细分步指导**，每一步都包含**命令、代码、截图建议、注意事项**，你可以直接照做。  
-分为五大部分，每部分都给出**MySQL建表、插入、查询语句**，并配套Python代码。
+# Weibo Crawler 与关键词命中演示
+
+一个基于 Python 的微博数据抓取、关键词匹配与可视化演示项目。项目提供：
+- 抓取移动端微博搜索结果并写入 MySQL
+- 使用 AC 自动机进行关键词命中，生成命中列表
+- 通过 Flask 展示命中微博列表、简单仪表盘
+- 本地“水军评论”离线模拟（仅写本地数据库，不会向官网发送评论）
+
+> 合规提醒：本项目仅用于课程实验与技术学习。请遵守目标网站的服务条款及法律法规，合理控制访问频次，不要用于任何滥用、刷量、绕过风控的行为。
 
 ---
 
-## ✅环境准备（一次性完成）
+## 目录结构
 
-| 工具     | 安装命令（Windows/Mac通用）                                  |
-| -------- | ------------------------------------------------------------ |
-| MySQL    | [官网下载](https://dev.mysql.com/downloads/mysql/) 或 `brew install mysql` |
-| Python库 | `pip install requests beautifulsoup4 pymysql flask pyahocorasick matplotlib lxml` |
-
-- 启动MySQL服务：
-```bash
-mysql -u root -p
 ```
-
-- 创建数据库：
-```sql
-CREATE DATABASE weibo_crawler CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-USE weibo_crawler;
+weibo_crawler/
+  app.py                      # Flask Web 入口
+  config.py                   # 数据库、关键词、Cookie 等配置
+  requirements.txt            # 依赖列表
+  sql/
+    init_db.sql               # 初始化数据库与表结构
+  crawler/
+    fetch.py                  # 移动端接口抓取脚本（免 Cookie，可选带 Cookie）
+  analyzer/
+    db_ops.py                 # 数据库读写封装
+    keyword_match.py          # 关键词命中写入 keyword_hit
+    topic_stats.py            # 关键词/用户统计（仪表盘使用）
+    troll_flood.py            # 本地“水军评论”离线模拟（写 troll_comments）
+  templates/
+    dashboard.html            # 仪表盘模板
+    troll.html                # 离线评论展示
+  static/
+    img/kw_bar.png            # 示例图片（可替换）
 ```
 
 ---
 
-## ✅Part1：数据捕获（微博内容抓取 → 存入MySQL）
+## 环境要求
 
-### Step1：创建数据表
+- Python 3.9+
+- MySQL 5.7+（推荐 8.0）
+- 操作系统：Windows/macOS/Linux
+
+---
+
+## 快速开始（Windows PowerShell 示例）
+
+1) 克隆并安装依赖
+
+```powershell
+cd D:\weibo_crawler
+python -m venv .venv
+. .\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+```
+
+2) 初始化数据库
+
+```powershell
+# 确保已安装并启动 MySQL，记住 root 密码
+mysql -u root -p < .\sql\init_db.sql
+```
+
+3) 配置 `config.py`
+
+- 将 `MYSQL["password"]` 改为你的实际密码
+- 可在 `KEYWORDS` 中增删关键词
+- 如遇风控（状态码 432/403），可将浏览器中 `m.weibo.cn` 的 Cookie 粘贴到 `WEIBO_COOKIE`
+
+4) 抓取微博（写入 `weibo_raw`）
+
+```powershell
+python .\crawler\fetch.py
+```
+
+默认抓取关键词“高考”的 1 页数据。若要调整，在 `fetch.py` 末尾修改：
+
+```python
+if __name__ == "__main__":
+    fetch(keyword="高考", pages=1)
+```
+
+5) 关键词命中（写入 `keyword_hit`）
+
+```powershell
+python .\analyzer\keyword_match.py
+```
+
+6) 启动 Web 界面
+
+```powershell
+python .\app.py
+```
+
+浏览器访问：
+- 命中列表首页：`http://127.0.0.1:5000/`
+- 命中判断示例：`http://127.0.0.1:5000/weibo/<id>`（把 `<id>` 换成实际微博 ID）
+- 仪表盘：`http://127.0.0.1:5000/dashboard`
+- 离线评论演示：`http://127.0.0.1:5000/troll`
+
+---
+
+## 功能说明
+
+- 抓取：`crawler/fetch.py` 通过移动端公开接口抓取搜索结果，入库到 `weibo_raw`。
+- 匹配：`analyzer/keyword_match.py` 使用 `pyahocorasick` 对 `content` 做关键词匹配，将命中写入 `keyword_hit`。
+- 拦截示例：访问 `GET /weibo/<id>` 时检查 `keyword_hit` 是否存在该 `weibo_id`，存在则显示“已被屏蔽”。
+- 仪表盘：`/dashboard` 展示关键词频次、活跃用户等（示例）。
+- 离线评论：`analyzer/troll_flood.py` 生成模板评论写入本地表 `troll_comments`，`/troll` 页面读取展示。
+
+> 说明：项目没有对微博官网执行评论发布操作；“水军评论”仅为本地数据库模拟，用于课程演示。
+
+---
+
+## 数据库结构
+
+执行 `sql/init_db.sql` 创建：
+
+- `weibo_raw`：抓取原始数据（含 `raw_json`）
+- `keyword_hit`：命中结果（`weibo_id` 外键引用 `weibo_raw.id`）
+- `topic_stats`：主题统计结果表（由 `analyzer/topic_stats.py` 生成并覆盖写入，`date + keyword` 唯一）
+
+如需使用离线评论演示，请建表：
 
 ```sql
-CREATE TABLE weibo_raw (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(100),
-    content TEXT,
-    created_at DATETIME,
-    reposts INT DEFAULT 0,
-    comments INT DEFAULT 0,
-    likes INT DEFAULT 0,
-    keyword VARCHAR(50),
-    raw_json JSON,
-    inserted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE troll_comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  target_weibo_id INT NOT NULL,
+  username VARCHAR(100) NOT NULL,
+  comment TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ```
 
-### Step2：Python爬虫抓取微博（关键词“高考”）
+---
 
-```python
-import requests
-import pymysql
-import json
-from bs4 import BeautifulSoup
-import time
+## 获取 Cookie（可选，遇到 432/403 时）
 
-# 连接MySQL
-conn = pymysql.connect(host='localhost', user='root', password='你的密码', db='weibo_crawler', charset='utf8mb4')
-cursor = conn.cursor()
+1) 在浏览器访问 `https://m.weibo.cn/search` 并登录
+2) 打开开发者工具 Network，选择任意 `m.weibo.cn` 请求
+3) 复制完整 `Cookie`，粘贴到 `config.py` 的 `WEIBO_COOKIE`
 
-headers = {
-    'User-Agent': 'Mozilla/5.0',
-    'Cookie': '你的微博Cookie'
-}
-
-def fetch_weibo(keyword, page=1):
-    url = f'https://weibo.com/ajax/search/topics?q={keyword}&page={page}'
-    res = requests.get(url, headers=headers)
-    data = res.json()
-    for card in data['data']['cards']:
-        if 'mblog' not in card:
-            continue
-        m = card['mblog']
-        username = m['user']['screen_name']
-        content = BeautifulSoup(m['text'], 'lxml').get_text()
-        created_at = m['created_at']
-        reposts = m.get('reposts_count', 0)
-        comments = m.get('comments_count', 0)
-        likes = m.get('attitudes_count', 0)
-
-        cursor.execute("""
-            INSERT INTO weibo_raw (username, content, created_at, reposts, comments, likes, keyword, raw_json)
-            VALUES (%s, %s, STR_TO_DATE(%s, '%%a %%b %%d %%H:%%i:%%s +0800 %%Y'), %s, %s, %s, %s, %s)
-        """, (username, content, created_at, reposts, comments, likes, keyword, json.dumps(m, ensure_ascii=False)))
-    conn.commit()
-
-# 抓5页
-for i in range(1, 6):
-    fetch_weibo('高考', page=i)
-    time.sleep(2)
-
-cursor.close()
-conn.close()
-```
+项目会自动把 Cookie 加入请求头，降低被风控概率。
 
 ---
 
-## ✅Part2：协议还原（HTTP结构分析）
+## 常见问题（FAQ）
 
-> 使用Fiddler/浏览器开发者工具，分析请求：
+- 报 432/403：
+  - 配置有效 `WEIBO_COOKIE`
+  - 降低 `pages` 与访问频次，增加间隔
+  - 更换网络/账号/UA
 
-- **请求URL**：`https://weibo.com/ajax/search/topics?q=高考&page=1`
-- **请求方法**：GET
-- **Headers**：Cookie、User-Agent
-- **响应格式**：JSON → 解析字段如上
+- `raw_json JSON` 不支持：
+  - 升级 MySQL 至 5.7+；或将字段改为 `LONGTEXT`
 
----
+- 中文乱码：
+  - 确保库与连接均为 `utf8mb4`
 
-## ✅Part3：关键词匹配（AC自动机 → 存入命中表）
-
-### Step1：创建关键词命中表
-
-```sql
-CREATE TABLE keyword_hit (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    weibo_id INT,
-    keyword VARCHAR(50),
-    hit_content TEXT,
-    FOREIGN KEY (weibo_id) REFERENCES weibo_raw(id)
-);
-```
-
-### Step2：关键词匹配并插入命中记录
-
-```python
-import ahocorasick
-
-# 构建AC自动机
-keywords = ['高考', '作弊', '泄题', '焦虑']
-A = ahocorasick.Automaton()
-for idx, key in enumerate(keywords):
-    A.add_word(key, (idx, key))
-A.make_automaton()
-
-# 查询并匹配
-cursor = conn.cursor()
-cursor.execute("SELECT id, content FROM weibo_raw")
-for row in cursor.fetchall():
-    weibo_id, content = row
-    for end_index, (idx, key) in A.iter(content):
-        cursor.execute("""
-            INSERT INTO keyword_hit (weibo_id, keyword, hit_content)
-            VALUES (%s, %s, %s)
-        """, (weibo_id, key, content))
-conn.commit()
-```
+- 端口占用：
+  - 修改 `app.py`：`app.run(debug=True, port=5001)`
 
 ---
 
-## ✅Part4：控管响应（网页重定向）
+## 许可与声明
 
-### Step1：Flask拦截器（关键词命中即跳转）
+本项目仅用于教学与研究，不对任何第三方平台施加负载或进行非授权操作。使用者需自行确保使用合规、合法，并对使用后果负责。
 
-```python
-from flask import Flask, request, redirect, render_template_string
 
-app = Flask(__name__)
-
-@app.route('/weibo/<int:weibo_id>')
-def view_weibo(weibo_id):
-    cursor.execute("SELECT keyword FROM keyword_hit WHERE weibo_id = %s", (weibo_id,))
-    hits = cursor.fetchall()
-    if hits:
-        return redirect('/blocked')
-    return f"微博内容正常，ID={weibo_id}"
-
-@app.route('/blocked')
-def blocked():
-    return "<h2>⚠️该微博包含敏感内容，已被屏蔽。</h2>"
-
-if __name__ == '__main__':
-    app.run(debug=True)
-```
-
----
-
-## ✅Part5：界面展示（Flask + MySQL）
-
-### Step1：查询展示页面
-
-```python
-@app.route('/')
-def index():
-    cursor.execute("""
-        SELECT w.id, w.username, w.content, w.created_at, h.keyword
-        FROM weibo_raw w
-        JOIN keyword_hit h ON w.id = h.weibo_id
-        ORDER BY w.created_at DESC
-    """)
-    rows = cursor.fetchall()
-    return render_template_string("""
-    <h2>关键词命中微博列表</h2>
-    <table border=1>
-      <tr><th>ID</th><th>用户</th><th>内容</th><th>时间</th><th>关键词</th></tr>
-      {% for r in rows %}
-      <tr>
-        <td>{{ r[0] }}</td>
-        <td>{{ r[1] }}</td>
-        <td>{{ r[2][:100] }}...</td>
-        <td>{{ r[3] }}</td>
-        <td>{{ r[4] }}</td>
-      </tr>
-      {% endfor %}
-    </table>
-    """, rows=rows)
-```
-
----
-
-## ✅MySQL常用查询（用于展示）
-
-| 目的               | SQL                                                          |
-| ------------------ | ------------------------------------------------------------ |
-| 每个关键词出现次数 | `SELECT keyword, COUNT(*) FROM keyword_hit GROUP BY keyword;` |
-| 高频用户           | `SELECT username, COUNT(*) FROM weibo_raw GROUP BY username ORDER BY COUNT(*) DESC LIMIT 10;` |
-| 最新命中微博       | `SELECT * FROM keyword_hit ORDER BY id DESC LIMIT 20;`       |
-
----
-
-## ✅截图建议（用于报告）
-
-| 步骤        | 截图内容                               |
-| ----------- | -------------------------------------- |
-| MySQL表结构 | `SHOW TABLES;` + `DESCRIBE weibo_raw;` |
-| 插入数据    | `SELECT * FROM weibo_raw LIMIT 5;`     |
-| 关键词命中  | `SELECT * FROM keyword_hit LIMIT 5;`   |
-| Flask界面   | 浏览器打开 `http://localhost:5000/`    |
-| 控管跳转    | 访问命中微博跳转 `/blocked` 页         |
-
----
-
-## ✅下一步建议（可选A级）
-
-- 加入**情感分析**字段（SnowNLP）
-- 加入**用户画像**（性别、地区、粉丝数）
-- 使用**词云图**展示关键词频率
-- 支持**实时抓包**（mitmproxy）
-
----
-
-如需我帮你打包完整的**Flask项目结构（含SQL脚本）**或**生成开题PPT**，请继续告诉我。

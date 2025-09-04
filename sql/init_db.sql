@@ -23,3 +23,14 @@ CREATE TABLE keyword_hit (
 );
 
 CREATE INDEX kw_idx ON keyword_hit(keyword);
+
+-- 主题统计结果表（由 analyzer/topic_stats.py 生成/覆盖写入）
+CREATE TABLE IF NOT EXISTS topic_stats (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    date DATE NOT NULL,
+    keyword VARCHAR(100) NOT NULL,
+    freq INT NOT NULL DEFAULT 0,
+    top_user VARCHAR(100) NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uniq_date_keyword (date, keyword)
+);
