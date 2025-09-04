@@ -12,7 +12,7 @@ from urllib.parse import quote
 
 # 让脚本无论在哪都能 import config
 sys.path.append(os.path.abspath("."))
-from config import MYSQL
+from config import MYSQL, WEIBO_COOKIE
 
 # 连接数据库
 conn = pymysql.connect(** MYSQL)
@@ -24,9 +24,13 @@ HEADERS = {
     "Accept": "application/json, text/plain, */*",
     "Accept-Language": "zh-CN,zh;q=0.9",
     "Connection": "keep-alive",
-    "Referer": "https://m.weibo.cn/search/",
+    "Host": "m.weibo.cn",
     "X-Requested-With": "XMLHttpRequest"
 }
+
+# 如果配置了 Cookie，则自动加入请求头，降低 432/403 风险
+if WEIBO_COOKIE:
+    HEADERS["Cookie"] = WEIBO_COOKIE
 
 def fetch(keyword="高考", pages=1):
     """
@@ -45,7 +49,16 @@ def fetch(keyword="高考", pages=1):
             f"&page_type=searchall&page={page}"
         )
         try:
-            resp = requests.get(url, headers=HEADERS, timeout=10)
+            # 动态设置 Referer，有助于降低风控
+            headers = HEADERS.copy()
+            headers["Referer"] = (
+                "https://m.weibo.cn/search/?containerid=100103type%3D1%26q%3D" f"{encoded_keyword}"
+            )
+
+            resp = requests.get(url, headers=headers, timeout=10)
+            if resp.status_code == 432:
+                print("[ERROR] 被风控拦截(432)。请在 config.py 设置有效的 WEIBO_COOKIE，或稍后重试/更换网络。")
+                break
             resp.raise_for_status()
             data = resp.json()
             
@@ -110,4 +123,4 @@ def fetch(keyword="高考", pages=1):
 
 
 if __name__ == "__main__":
-    fetch(keyword="高考", pages=1)  # 先抓 1 页测试
+    fetch(keyword="俄乌战争", pages=1)  # 先抓 1 页测试

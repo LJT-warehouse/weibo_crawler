@@ -1,0 +1,4 @@
+<h2>主题统计</h2>
+<img src="{{ url_for('static', filename='img/kw_bar.png') }}" width="600">
+<h3>Top-10 舆论领袖</h3>
+<table class="table">{% for u,cnt in users %}<tr><td>{{ u }}</td><td>{{ cnt }}</td></tr>{% endfor %}</table>
