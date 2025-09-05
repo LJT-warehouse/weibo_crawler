@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>微博爬虫演示系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        .feature-card {
+            transition: transform 0.2s;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 0;
+        }
+        .stats-card {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-graph-up"></i> 微博爬虫演示系统
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/">首页</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/hits">命中列表</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/dashboard">仪表盘</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/troll">评论演示</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主横幅 -->
+    <section class="hero-section">
+        <div class="container text-center">
+            <h1 class="display-4 mb-4">微博数据抓取与关键词分析系统</h1>
+            <p class="lead mb-4">基于 Python + MySQL + Flask 的微博数据采集、关键词匹配与可视化演示平台</p>
+            <div class="row justify-content-center">
+                <div class="col-md-8">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>合规提醒：</strong>本项目仅用于课程实验与技术学习，请遵守相关法律法规
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 功能模块 -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">系统功能模块</h2>
+            <div class="row g-4">
+                <!-- 数据抓取 -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-download display-4 text-primary mb-3"></i>
+                            <h5 class="card-title">数据抓取</h5>
+                            <p class="card-text">通过移动端接口抓取微博搜索结果，支持关键词配置与Cookie认证</p>
+                            <div class="mt-3">
+                                <span class="badge bg-primary">crawler/fetch.py</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 关键词匹配 -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-search display-4 text-success mb-3"></i>
+                            <h5 class="card-title">关键词匹配</h5>
+                            <p class="card-text">使用AC自动机算法进行高效关键词匹配，支持多关键词并发检测</p>
+                            <div class="mt-3">
+                                <span class="badge bg-success">analyzer/keyword_match.py</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 数据可视化 -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-bar-chart display-4 text-warning mb-3"></i>
+                            <h5 class="card-title">数据可视化</h5>
+                            <p class="card-text">提供关键词热度图表、用户活跃度统计等可视化分析功能</p>
+                            <div class="mt-3">
+                                <a href="/dashboard" class="btn btn-warning btn-sm">
+                                    <i class="bi bi-eye"></i> 查看仪表盘
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 内容管控 -->
+                <div class="col-md-6 col-lg-3">
+                    <div class="card feature-card h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-shield-check display-4 text-danger mb-3"></i>
+                            <h5 class="card-title">内容管控</h5>
+                            <p class="card-text">基于关键词命中的内容拦截机制，支持敏感内容自动屏蔽</p>
+                            <div class="mt-3">
+                                <span class="badge bg-danger">GET /weibo/&lt;id&gt;</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 快速操作 -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <h2 class="text-center mb-5">快速操作</h2>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="card stats-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-list-ul text-primary"></i> 命中微博列表
+                            </h5>
+                            <p class="card-text">查看所有关键词命中的微博内容，支持按时间排序</p>
+                            <a href="/hits" class="btn btn-primary">
+                                <i class="bi bi-arrow-right"></i> 查看列表
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card stats-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-graph-up text-success"></i> 数据分析仪表盘
+                            </h5>
+                            <p class="card-text">关键词热度、用户活跃度、时间趋势等统计图表</p>
+                            <a href="/dashboard" class="btn btn-success">
+                                <i class="bi bi-arrow-right"></i> 打开仪表盘
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card stats-card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                <i class="bi bi-chat-dots text-warning"></i> 评论演示
+                            </h5>
+                            <p class="card-text">本地模拟的"水军评论"生成与展示（仅数据库操作）</p>
+                            <a href="/troll" class="btn btn-warning">
+                                <i class="bi bi-arrow-right"></i> 查看演示
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 技术栈 -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">技术栈</h2>
+            <div class="row text-center">
+                <div class="col-md-2 col-4 mb-3">
+                    <i class="bi bi-code-slash display-6 text-primary"></i>
+                    <div class="mt-2">Python 3.9+</div>
+                </div>
+                <div class="col-md-2 col-4 mb-3">
+                    <i class="bi bi-database display-6 text-success"></i>
+                    <div class="mt-2">MySQL 5.7+</div>
+                </div>
+                <div class="col-md-2 col-4 mb-3">
+                    <i class="bi bi-bootstrap display-6 text-info"></i>
+                    <div class="mt-2">Flask</div>
+                </div>
+                <div class="col-md-2 col-4 mb-3">
+                    <i class="bi bi-graph-up display-6 text-warning"></i>
+                    <div class="mt-2">Matplotlib</div>
+                </div>
+                <div class="col-md-2 col-4 mb-3">
+                    <i class="bi bi-search display-6 text-danger"></i>
+                    <div class="mt-2">AC自动机</div>
+                </div>
+                <div class="col-md-2 col-4 mb-3">
+                    <i class="bi bi-globe display-6 text-secondary"></i>
+                    <div class="mt-2">Bootstrap 5</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 页脚 -->
+    <footer class="bg-dark text-light py-4">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="bi bi-code-slash"></i> 
+                微博爬虫演示系统 - 仅供学习研究使用
+            </p>
+            <small class="text-muted">
+                请遵守相关法律法规，合理使用技术工具
+            </small>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

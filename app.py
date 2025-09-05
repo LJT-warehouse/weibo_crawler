@@ -1,18 +1,17 @@
-from flask import Flask, render_template_string, redirect, request
+from flask import Flask, render_template_string, redirect, request, render_template
 import pymysql
 from config import MYSQL
 from analyzer.db_ops import get_cursor
-from flask import Flask, render_template_string
-from flask import render_template
 
 app = Flask(__name__)
 conn = pymysql.connect(**MYSQL, cursorclass=pymysql.cursors.DictCursor)
 
-from flask import render_template_string
-from analyzer.db_ops import get_cursor
-
 @app.route("/")
 def index():
+    return render_template("index.html")
+
+@app.route("/hits")
+def hits():
     with get_cursor() as cur:
         cur.execute("""
             SELECT h.keyword,
