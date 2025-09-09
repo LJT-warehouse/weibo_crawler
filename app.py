@@ -2,6 +2,7 @@ from flask import Flask, render_template_string, redirect, request, render_templ
 import pymysql
 from config import MYSQL
 from analyzer.db_ops import get_cursor
+import time
 
 app = Flask(__name__)
 conn = pymysql.connect(**MYSQL, cursorclass=pymysql.cursors.DictCursor)
@@ -12,17 +13,17 @@ def index():
 
 @app.route("/hits")
 def hits():
+    t0 = time.time()
     with get_cursor() as cur:
         cur.execute("""
-            SELECT h.keyword,
-                   w.username,
-                   w.content,
-                   w.created_at
+            SELECT h.keyword, w.username, w.content, w.created_at
             FROM keyword_hit h
             JOIN weibo_raw w ON h.weibo_id = w.id
             ORDER BY w.id DESC
         """)
         rows = cur.fetchall()
+    t1 = time.time()
+    print(f"数据库查询耗时: {t1-t0:.3f} 秒")
 
     # 纯 HTML 字符串输出，不依赖模板文件
     html = f"""

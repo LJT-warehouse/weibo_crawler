@@ -123,4 +123,4 @@ def fetch(keyword="高考", pages=1):
 
 
 if __name__ == "__main__":
-    fetch(keyword="俄乌战争", pages=1)  # 先抓 1 页测试
+    fetch(keyword="小米", pages=2)  # 先抓 1 页测试

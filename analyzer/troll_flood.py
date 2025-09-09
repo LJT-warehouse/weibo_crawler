@@ -18,7 +18,7 @@ TEMPLATES = [
     "阳光总在风雨后！"
 ]
 
-def flood_troll(keyword="高考", amount=50):
+def flood_troll(keyword="小米", amount=50):
     hits = get_hit_list(limit=9999)
     targets = [h for h in hits if h["keyword"] == keyword]
     if not targets:
@@ -40,4 +40,4 @@ def flood_troll(keyword="高考", amount=50):
     print(f"[DONE] 已为 {len(targets)} 条微博各生成 {amount} 条控管评论")
 
 if __name__ == "__main__":
-    flood_troll(keyword="高考", amount=30)
+    flood_troll(keyword="小米", amount=30)
