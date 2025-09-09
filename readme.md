@@ -162,8 +162,46 @@ CREATE TABLE troll_comments (
 
 ---
 
-## 许可与声明
+## 常用维护脚本
 
-本项目仅用于教学与研究，不对任何第三方平台施加负载或进行非授权操作。使用者需自行确保使用合规、合法，并对使用后果负责。
+- `clear_weibo_raw.py`  
+  用于**一键清空数据库中的 `weibo_raw`、`keyword_hit`、`troll_comments` 三张表**，便于测试或重新抓取数据。执行顺序会自动规避外键约束问题。  
+  使用方法：
+  ```powershell
+  python clear_weibo_raw.py
+  ```
+  执行后会输出：  
+  ```
+  troll_comments、keyword_hit 和 weibo_raw 表已清空
+  ```
+
+---
+
+## MySQL 常用查询命令
+
+你可以用如下命令在 MySQL 命令行或客户端查询各表内容：
+
+```sql
+-- 查询 weibo_raw 表前 10 条
+SELECT * FROM weibo_raw LIMIT 10;
+
+-- 查询 keyword_hit 表前 10 条
+SELECT * FROM keyword_hit LIMIT 10;
+
+-- 查询 troll_comments 表前 10 条
+SELECT * FROM troll_comments LIMIT 10;
+
+-- 查询 topic_stats 表前 10 条
+SELECT * FROM topic_stats LIMIT 10;
+```
+
+如需查看表结构，可用：
+
+```sql
+DESC weibo_raw;
+DESC keyword_hit;
+DESC troll_comments;
+DESC topic_stats;
+```
 
 
